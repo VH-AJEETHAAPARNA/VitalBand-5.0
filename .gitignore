@@ -46,3 +46,6 @@ dist/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Editor/agent tooling, not project source
+.claude/
