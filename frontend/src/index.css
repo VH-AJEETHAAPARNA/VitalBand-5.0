@@ -1,0 +1,289 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-navy: #0b2545;
+    --color-red: #d92b2b;
+    --color-green: #1e8e3e;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  }
+}
+
+/* ── Custom Animations & Micro-Interactions ── */
+
+/* 1. Shimmer Loading Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(11, 37, 69, 0.05) 25%,
+    rgba(11, 37, 69, 0.15) 37%,
+    rgba(11, 37, 69, 0.05) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+
+/* 2. Live Camera Pulse Glow */
+@keyframes cameraGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(30, 142, 62, 0.4), inset 0 0 8px rgba(30, 142, 62, 0.2);
+    border-color: rgba(30, 142, 62, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(30, 142, 62, 0.7), inset 0 0 15px rgba(30, 142, 62, 0.4);
+    border-color: rgba(30, 142, 62, 1);
+  }
+}
+
+.animate-camera-glow {
+  animation: cameraGlow 2.5s infinite ease-in-out;
+}
+
+/* 3. Alerts Panel Slide In + Highlight Flash */
+@keyframes slideDownFlash {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+    background-color: rgba(217, 43, 43, 0.15);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: rgba(217, 43, 43, 0.12);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-row-slide-flash {
+  animation: slideDownFlash 0.8s ease-out forwards;
+}
+
+/* 4. Card Stagger Entrance Animations */
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-entrance {
+  animation: cardSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Tactile Active Scale Down */
+.tactile-button {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tactile-button:active {
+  transform: scale(0.96);
+}
+
+/* 5. AI Drawer Slide-in Animation */
+@keyframes slideInFromBottom5 {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.slide-in-from-bottom-5 {
+  animation: slideInFromBottom5 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-in {
+  animation-fill-mode: forwards;
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WARD FLOORPLAN — original motion system (SVG)
+   Built for VitalBand: every animation encodes clinical meaning,
+   never decoration. The prefers-reduced-motion rule above uses !important,
+   so it still disables every animation defined below it.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 6. Scan Machine sonar sweep — mirrors the REAL rotating servo.
+      Sequential/spot-check coverage, not simultaneous: the cone
+      rotates so judges literally see one zone covered at a time. */
+@keyframes sonarSweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ward-sonar-cone {
+  transform-origin: center;
+  animation: sonarSweep 6s linear infinite;
+}
+
+/* 7. Sonar range rings — expanding detection radius */
+@keyframes sonarRing {
+  0%   { r: 12;  opacity: 0.55; stroke-width: 2; }
+  100% { r: 118; opacity: 0;    stroke-width: 0.4; }
+}
+.ward-sonar-ring { animation: sonarRing 3s ease-out infinite; }
+.ward-sonar-ring-2 { animation-delay: 1.5s; }
+
+/* 8. Critical bed — double-pulse ring echoing a heartbeat (lub-dub),
+      not a generic uniform blink. */
+@keyframes criticalHeartRing {
+  0%   { opacity: 0.95; stroke-width: 3.5; }
+  12%  { opacity: 0.30; stroke-width: 1.5; }
+  24%  { opacity: 0.90; stroke-width: 3.2; }
+  40%  { opacity: 0.25; stroke-width: 1.5; }
+  100% { opacity: 0.25; stroke-width: 1.5; }
+}
+.ward-critical-ring { animation: criticalHeartRing 1.15s ease-in-out infinite; }
+
+/* 9. Live ECG trace drawn inside an occupied bed node */
+@keyframes ecgTrace {
+  from { stroke-dashoffset: 260; }
+  to   { stroke-dashoffset: 0; }
+}
+.ward-ecg {
+  stroke-dasharray: 260;
+  animation: ecgTrace 2.2s linear infinite;
+}
+.ward-ecg-critical { animation-duration: 0.85s; }
+
+/* 10. Amber (Level 2) slow breathing glow — urgent but not emergent */
+@keyframes breathGlow {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.75; }
+}
+.ward-breath { animation: breathGlow 2.6s ease-in-out infinite; }
+
+/* 11. Triage handoff ripple — fires when a patient is routed */
+@keyframes triageRipple {
+  0%   { r: 6;  opacity: 0.8; }
+  100% { r: 60; opacity: 0; }
+}
+.ward-ripple { animation: triageRipple 1.4s ease-out infinite; }
+
+/* ══════════════════════════════════════════════════════════════════
+   LANDING PAGE — narrative motion
+   Each animation carries a piece of the pitch. Nothing here is
+   decoration for its own sake, and the reduced-motion rule earlier
+   in this file (with !important) disables all of it.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 12. ECG line that draws itself across the hero, then resets.
+       This is the heartbeat the system is watching for. */
+@keyframes heroEcgDraw {
+  0%   { stroke-dashoffset: 1400; opacity: 0; }
+  8%   { opacity: 1; }
+  70%  { stroke-dashoffset: 0;    opacity: 1; }
+  92%  { opacity: 1; }
+  100% { stroke-dashoffset: 0;    opacity: 0; }
+}
+.hero-ecg {
+  stroke-dasharray: 1400;
+  animation: heroEcgDraw 6s ease-in-out infinite;
+}
+
+/* 13. The travelling pulse dot that rides the ECG trace */
+@keyframes heroPulseRide {
+  0%   { offset-distance: 0%;   opacity: 0; }
+  8%   { opacity: 1; }
+  70%  { offset-distance: 100%; opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+/* 14. Scan sweep — the rotating Scan Machine cone, as a light bar
+       crossing the hero from left to right. */
+@keyframes heroScanSweep {
+  0%   { transform: translateX(-30%); opacity: 0; }
+  15%  { opacity: 0.55; }
+  85%  { opacity: 0.55; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+.hero-sweep { animation: heroScanSweep 7s ease-in-out infinite; }
+
+/* 15. Staggered rise for headline lines and cards */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise { opacity: 0; animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* 16. Word-by-word reveal for the headline */
+@keyframes wordIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
+}
+.word { display: inline-block; opacity: 0; animation: wordIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* 17. Counter tick — a subtle lift as a stat lands */
+@keyframes statLand {
+  0%   { opacity: 0; transform: translateY(10px); }
+  60%  { transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.stat-land { opacity: 0; animation: statLand 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* 18. Slow aurora drift behind the hero — depth without distraction */
+@keyframes auroraDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(4%, -3%, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.aurora { animation: auroraDrift 18s ease-in-out infinite; }
+.aurora-slow { animation: auroraDrift 26s ease-in-out infinite reverse; }
+
+/* 19. Alert ring — the double-beat used on the dashboard, reused here
+       so the landing page and the product share one visual language. */
+@keyframes heartRing {
+  0%   { transform: scale(1);    opacity: 0.85; }
+  14%  { transform: scale(1.18); opacity: 0.25; }
+  28%  { transform: scale(1.04); opacity: 0.7;  }
+  45%  { transform: scale(1.22); opacity: 0;    }
+  100% { transform: scale(1.22); opacity: 0;    }
+}
+.heart-ring { animation: heartRing 1.6s ease-out infinite; }
+
+/* 20. Shimmer that crosses the CTA once in a while */
+@keyframes ctaSheen {
+  0%, 72%  { transform: translateX(-120%); }
+  100%     { transform: translateX(220%); }
+}
+.cta-sheen { animation: ctaSheen 4.5s ease-in-out infinite; }
+
+/* 21. Vertical grid drift — the floorplan motif, very faint */
+@keyframes gridDrift {
+  from { transform: translateY(0); }
+  to   { transform: translateY(56px); }
+}
+.grid-drift { animation: gridDrift 9s linear infinite; }
