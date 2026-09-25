@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VitalBand Monitor</title>
+<style>
+  :root {
+    --navy: #0b2545;
+    --red: #d92b2b;
+    --green: #1e8e3e;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #e1e5ea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--navy);
+  }
+  header {
+    background: var(--navy);
+    color: white;
+    padding: 18px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+  header .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green); display: inline-block; margin-right: 6px;
+  }
+  main {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5a6b85;
+    margin: 0 0 14px 0;
+  }
+  #patients { display: grid; gap: 14px; }
+  .patient {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .patient.alert { border-color: var(--red); background: #fff5f5; }
+  .patient-id { font-weight: 700; font-size: 16px; }
+  .metrics { display: flex; gap: 22px; margin-top: 6px; flex-wrap: wrap; }
+  .metric { font-size: 13px; color: #445; }
+  .metric b { font-size: 17px; display: block; color: var(--navy); }
+  .badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge.normal { background: #e6f4ea; color: var(--green); }
+  .badge.bad { background: #fdeaea; color: var(--red); }
+  #alerts { max-height: 480px; overflow-y: auto; }
+  .alert-row {
+    border-left: 4px solid var(--red);
+    background: #fff5f5;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .alert-row .ev { font-weight: 700; color: var(--red); }
+  .alert-row .time { color: #888; font-size: 11px; margin-top: 4px; }
+  .empty { color: #9aa5b5; font-size: 13px; text-align: center; padding: 20px 0; }
+  #banner {
+    display: none;
+    background: var(--red);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    grid-column: 1 / -1;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>VITALBAND MONITOR</h1>
+  <div><span class="status-dot"></span>Live</div>
+</header>
+
+<main>
+  <div id="banner"></div>
+
+  <div class="card">
+    <h2>Patients</h2>
+    <div id="patients"><div class="empty">Waiting for device data…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Recent Alerts</h2>
+    <div id="alerts"><div class="empty">No alerts yet</div></div>
+  </div>
+</main>
+
+<script>
+const patients = {};
+
+// Setup native WebSocket connection
+const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = wsProtocol + window.location.host + '/ws';
+let ws = new WebSocket(wsUrl);
+
+ws.onmessage = (event) => {
+  try {
+    const payload = JSON.parse(event.data);
+    const eventType = payload.event_type;
+    
+    if (eventType === 'vitals_update') {
+      patients[payload.patient_id] = { ...patients[payload.patient_id], ...payload };
+      renderPatients();
+    } else if (eventType === 'alert') {
+      if (!patients[payload.patient_id]) patients[payload.patient_id] = {};
+      if (payload.event === 'SOS') patients[payload.patient_id].sos = true;
+      if (payload.event.includes('FALL')) patients[payload.patient_id].fall = true;
+      if (payload.event.includes('DISTRESS')) patients[payload.patient_id].distress = true;
+      renderPatients();
+      pushAlert(payload);
+    }
+  } catch (e) {
+    console.error('Error processing websocket event:', e);
+  }
+};
+
+ws.onclose = () => {
+  console.warn('WebSocket connection lost. Attempting reconnection in 3 seconds...');
+  setTimeout(() => {
+    window.location.reload();
+  }, 3000);
+};
+
+function badge(status, isBad) {
+  return `<span class="badge ${isBad ? 'bad' : 'normal'}">${status}</span>`;
+}
+
+function renderPatients() {
+  const container = document.getElementById('patients');
+  const ids = Object.keys(patients);
+  if (ids.length === 0) {
+    container.innerHTML = '<div class="empty">Waiting for device data…</div>';
+    return;
+  }
+  container.innerHTML = ids.map(id => {
+    const p = patients[id];
+    const isAlert = p.fall || p.sos || p.distress || p.abnormal;
+    return `
+      <div class="patient ${isAlert ? 'alert' : ''}">
+        <div>
+          <div class="patient-id">Patient ${id}</div>
+          <div class="metrics">
+            <div class="metric"><b>${p.heart_rate ?? '--'}</b>BPM</div>
+            <div class="metric"><b>${p.spo2 ?? '--'}%</b>SpO2</div>
+          </div>
+        </div>
+        <div>
+          ${badge(p.fall ? 'FALL' : 'NORMAL', p.fall)}
+          ${badge(p.sos ? 'SOS' : 'OK', p.sos)}
+          ${badge(p.distress ? 'DISTRESS' : 'CALM', p.distress)}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function pushAlert(a) {
+  const container = document.getElementById('alerts');
+  if (container.querySelector('.empty')) container.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'alert-row';
+  row.innerHTML = `
+    <div class="ev">${a.event} — Patient ${a.patient_id}</div>
+    <div>${a.detail}</div>
+    <div class="time">${new Date(a.timestamp).toLocaleTimeString()}</div>`;
+  container.prepend(row);
+
+  const banner = document.getElementById('banner');
+  banner.style.display = 'block';
+  banner.textContent = `EMERGENCY: ${a.event} — Patient ${a.patient_id} — ${a.detail}`;
+  setTimeout(() => { banner.style.display = 'none'; }, 8000);
+}
+
+// initial load
+fetch('/api/patients').then(r => r.json()).then(list => {
+  list.forEach(p => { patients[p.patient_id] = p; });
+  renderPatients();
+});
+</script>
+</body>
+</html>
